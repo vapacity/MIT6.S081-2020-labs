@@ -3,6 +3,7 @@
 #include "kernel/fcntl.h"
 #include "user/user.h"
 
+//作用: 将源字符串 t 拷贝到目标字符串 s，包括终止符 \0，并返回目标字符串的指针。
 char*
 strcpy(char *s, const char *t)
 {
@@ -14,6 +15,7 @@ strcpy(char *s, const char *t)
   return os;
 }
 
+//作用: 比较两个字符串 p 和 q 的内容。返回值为负数、零或正数，分别表示 p 小于、等于或大于 q。
 int
 strcmp(const char *p, const char *q)
 {
@@ -22,6 +24,7 @@ strcmp(const char *p, const char *q)
   return (uchar)*p - (uchar)*q;
 }
 
+//作用: 计算字符串 s 的长度，不包括终止符 \0，并返回长度值。
 uint
 strlen(const char *s)
 {
@@ -32,6 +35,7 @@ strlen(const char *s)
   return n;
 }
 
+//作用: 将 dst 指向的内存区域的前 n 个字节设置为字符 c，并返回 dst 的指针。
 void*
 memset(void *dst, int c, uint n)
 {
@@ -43,6 +47,7 @@ memset(void *dst, int c, uint n)
   return dst;
 }
 
+//作用: 在字符串 s 中查找字符 c，并返回指向第一次出现的 c 的指针。如果未找到，返回 NULL。
 char*
 strchr(const char *s, char c)
 {
@@ -70,6 +75,7 @@ gets(char *buf, int max)
   return buf;
 }
 
+//作用: 获取文件 n 的状态信息并存储在 st 指向的 stat 结构中。返回 0 表示成功，返回 -1 表示失败。
 int
 stat(const char *n, struct stat *st)
 {
@@ -84,6 +90,7 @@ stat(const char *n, struct stat *st)
   return r;
 }
 
+//作用: 将字符串 s 转换为整数，并返回该整数值。
 int
 atoi(const char *s)
 {
@@ -95,6 +102,7 @@ atoi(const char *s)
   return n;
 }
 
+//作用: 将 vsrc 指向的内存区域的前 n 个字节拷贝到 vdst 指向的内存区域，处理源和目标内存区域重叠的情况，并返回 vdst 的指针。
 void*
 memmove(void *vdst, const void *vsrc, int n)
 {

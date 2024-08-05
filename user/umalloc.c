@@ -21,6 +21,7 @@ typedef union header Header;
 static Header base;
 static Header *freep;
 
+//作用: 释放之前通过 malloc 分配的内存块，使其可以被后续的内存分配请求重新使用。
 void
 free(void *ap)
 {
@@ -43,6 +44,7 @@ free(void *ap)
   freep = p;
 }
 
+//作用: 向操作系统请求更多的内存，并将其添加到空闲链表中。通常用于当现有空闲内存不足以满足新的内存分配请求时。
 static Header*
 morecore(uint nu)
 {
@@ -60,6 +62,7 @@ morecore(uint nu)
   return freep;
 }
 
+//作用: 分配大小为 nbytes 的内存块。如果空闲链表中有足够大的块，则分配该块，否则调用 morecore 获取更多内存。返回指向已分配内存块的指针。
 void*
 malloc(uint nbytes)
 {

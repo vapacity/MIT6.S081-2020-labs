@@ -6,12 +6,14 @@
 
 static char digits[] = "0123456789ABCDEF";
 
+//作用: 将一个字符写入指定的文件描述符。
 static void
 putc(int fd, char c)
 {
   write(fd, &c, 1);
 }
 
+//作用: 将一个整数转换为指定进制（如十进制、十六进制）并写入指定的文件描述符。
 static void
 printint(int fd, int xx, int base, int sgn)
 {
@@ -38,6 +40,7 @@ printint(int fd, int xx, int base, int sgn)
     putc(fd, buf[i]);
 }
 
+//作用: 将一个指针地址转换为十六进制表示并写入指定的文件描述符。
 static void
 printptr(int fd, uint64 x) {
   int i;
@@ -47,7 +50,7 @@ printptr(int fd, uint64 x) {
     putc(fd, digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
-// Print to the given fd. Only understands %d, %x, %p, %s.
+//作用: 根据格式字符串和可变参数列表，将格式化后的输出写入指定的文件描述符。支持的格式包括 %d、%x、%p、%s 和 %c。
 void
 vprintf(int fd, const char *fmt, va_list ap)
 {
@@ -94,6 +97,7 @@ vprintf(int fd, const char *fmt, va_list ap)
   }
 }
 
+//作用: 根据格式字符串和可变参数，将格式化后的输出写入指定的文件描述符。通过调用 vprintf 实现。
 void
 fprintf(int fd, const char *fmt, ...)
 {
@@ -103,6 +107,7 @@ fprintf(int fd, const char *fmt, ...)
   vprintf(fd, fmt, ap);
 }
 
+//作用: 根据格式字符串和可变参数，将格式化后的输出写入标准输出（文件描述符 1）。通过调用 vprintf 实现。
 void
 printf(const char *fmt, ...)
 {
