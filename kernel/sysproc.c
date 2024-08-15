@@ -99,7 +99,7 @@ sys_uptime(void)
 uint64
 sys_trace(void)
 {
-   print("sys_trace:hi\n");
+   printf("sys_trace:hi\n");
    return 0;
 }
 
