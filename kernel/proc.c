@@ -5,7 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-#define USYSCALL;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
