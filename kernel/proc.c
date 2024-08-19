@@ -694,7 +694,7 @@ procdump(void)
   }
 }
 
-uint64 countProc()
+int countProc()
 {
     uint64 count = 0;
     for (int i = 0; i < NPROC; i++) {

@@ -81,7 +81,7 @@ kalloc(void)
   return (void*)r;
 }
 
-uint64 countMem()
+int countMem()
 {
   struct run *p = kmem.freelist;
   uint64 count = 0;
