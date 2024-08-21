@@ -22,6 +22,12 @@ trapinit(void)
   initlock(&tickslock, "time");
 }
 
+void
+backtrace(void){
+  printf("backtrace()\n");
+  uint64 fp = r_fp();
+  while(PGROUNDUP(fp) - P
+}
 // set up to take exceptions and traps while in the kernel.
 void
 trapinithart(void)
