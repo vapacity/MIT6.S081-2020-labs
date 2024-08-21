@@ -1,136 +1,148 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "kernel/fcntl.h"
+#ifdef LAB_PGTBL
+#include "kernel/riscv.h"
+#include "kernel/memlayout.h"
+#endif
 #include "user/user.h"
 
-char*
-strcpy(char *s, const char *t)
+//
+// wrapper so that it's OK if main() does not call exit().
+//
+void _main()
 {
-  char *os;
-
-  os = s;
-  while((*s++ = *t++) != 0)
-    ;
-  return os;
+    extern int main();
+    main();
+    exit(0);
 }
 
-int
-strcmp(const char *p, const char *q)
+char *strcpy(char *s, const char *t)
 {
-  while(*p && *p == *q)
-    p++, q++;
-  return (uchar)*p - (uchar)*q;
+    char *os;
+
+    os = s;
+    while ((*s++ = *t++) != 0)
+        ;
+    return os;
 }
 
-uint
-strlen(const char *s)
+int strcmp(const char *p, const char *q)
 {
-  int n;
-
-  for(n = 0; s[n]; n++)
-    ;
-  return n;
+    while (*p && *p == *q)
+        p++, q++;
+    return (uchar)*p - (uchar)*q;
 }
 
-void*
-memset(void *dst, int c, uint n)
+uint strlen(const char *s)
 {
-  char *cdst = (char *) dst;
-  int i;
-  for(i = 0; i < n; i++){
-    cdst[i] = c;
-  }
-  return dst;
+    int n;
+
+    for (n = 0; s[n]; n++)
+        ;
+    return n;
 }
 
-char*
-strchr(const char *s, char c)
+void *memset(void *dst, int c, uint n)
 {
-  for(; *s; s++)
-    if(*s == c)
-      return (char*)s;
-  return 0;
-}
-
-char*
-gets(char *buf, int max)
-{
-  int i, cc;
-  char c;
-
-  for(i=0; i+1 < max; ){
-    cc = read(0, &c, 1);
-    if(cc < 1)
-      break;
-    buf[i++] = c;
-    if(c == '\n' || c == '\r')
-      break;
-  }
-  buf[i] = '\0';
-  return buf;
-}
-
-int
-stat(const char *n, struct stat *st)
-{
-  int fd;
-  int r;
-
-  fd = open(n, O_RDONLY);
-  if(fd < 0)
-    return -1;
-  r = fstat(fd, st);
-  close(fd);
-  return r;
-}
-
-int
-atoi(const char *s)
-{
-  int n;
-
-  n = 0;
-  while('0' <= *s && *s <= '9')
-    n = n*10 + *s++ - '0';
-  return n;
-}
-
-void*
-memmove(void *vdst, const void *vsrc, int n)
-{
-  char *dst;
-  const char *src;
-
-  dst = vdst;
-  src = vsrc;
-  if (src > dst) {
-    while(n-- > 0)
-      *dst++ = *src++;
-  } else {
-    dst += n;
-    src += n;
-    while(n-- > 0)
-      *--dst = *--src;
-  }
-  return vdst;
-}
-
-int
-memcmp(const void *s1, const void *s2, uint n)
-{
-  const char *p1 = s1, *p2 = s2;
-  while (n-- > 0) {
-    if (*p1 != *p2) {
-      return *p1 - *p2;
+    char *cdst = (char *)dst;
+    int i;
+    for (i = 0; i < n; i++) {
+        cdst[i] = c;
     }
-    p1++;
-    p2++;
-  }
-  return 0;
+    return dst;
 }
 
-void *
-memcpy(void *dst, const void *src, uint n)
+char *strchr(const char *s, char c)
 {
-  return memmove(dst, src, n);
+    for (; *s; s++)
+        if (*s == c)
+            return (char *)s;
+    return 0;
 }
+
+char *gets(char *buf, int max)
+{
+    int i, cc;
+    char c;
+
+    for (i = 0; i + 1 < max;) {
+        cc = read(0, &c, 1);
+        if (cc < 1)
+            break;
+        buf[i++] = c;
+        if (c == '\n' || c == '\r')
+            break;
+    }
+    buf[i] = '\0';
+    return buf;
+}
+
+int stat(const char *n, struct stat *st)
+{
+    int fd;
+    int r;
+
+    fd = open(n, O_RDONLY);
+    if (fd < 0)
+        return -1;
+    r = fstat(fd, st);
+    close(fd);
+    return r;
+}
+
+int atoi(const char *s)
+{
+    int n;
+
+    n = 0;
+    while ('0' <= *s && *s <= '9')
+        n = n * 10 + *s++ - '0';
+    return n;
+}
+
+void *memmove(void *vdst, const void *vsrc, int n)
+{
+    char *dst;
+    const char *src;
+
+    dst = vdst;
+    src = vsrc;
+    if (src > dst) {
+        while (n-- > 0)
+            *dst++ = *src++;
+    }
+    else {
+        dst += n;
+        src += n;
+        while (n-- > 0)
+            *--dst = *--src;
+    }
+    return vdst;
+}
+
+int memcmp(const void *s1, const void *s2, uint n)
+{
+    const char *p1 = s1, *p2 = s2;
+    while (n-- > 0) {
+        if (*p1 != *p2) {
+            return *p1 - *p2;
+        }
+        p1++;
+        p2++;
+    }
+    return 0;
+}
+
+void *memcpy(void *dst, const void *src, uint n)
+{
+    return memmove(dst, src, n);
+}
+
+#ifdef LAB_PGTBL
+int ugetpid(void)
+{
+    struct usyscall *u = (struct usyscall *)USYSCALL;
+    return u->pid;
+}
+#endif
