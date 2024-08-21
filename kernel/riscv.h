@@ -325,7 +325,7 @@ r_fp()
 {
   uint64 x;
   asm volatile("mv %0, s0" : "=r" (x) );
-  retrun x;
+  return x;
 }
 
 #define PGSIZE 4096 // bytes per page
