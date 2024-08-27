@@ -67,7 +67,7 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else if(r_scause == 13 || r_scause == 15) {
+  } else if(r_scause() == 13 || r_scause() == 15) {
     uint64 fault_va = r_stval();  // 获取出错的虚拟地址
     if(fault_va >= p->sz
       || cowpage(p->pagetable, fault_va) != 0
