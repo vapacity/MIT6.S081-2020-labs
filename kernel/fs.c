@@ -387,35 +387,60 @@ bmap(struct inode *ip, uint bn)
   }
   bn -= NINDIRECT;
   // bn 代表还剩多少个
-
-  if(bn < NBI_INDIRECT){
-    if((addr = ip->addrs[NDIRECT + 1]) == 0) // 如果之前没分配这个 block
-      ip->addrs[NDIRECT + 1] = addr = balloc(ip->dev);
-    bp = bread(ip->dev, addr); // buf pointer 的简称
-    a = (uint *)bp->data;
-
-    uint idx_b1 = bn / NINDIRECT; // 取得 bn 对应的，一级间接块在 addr 中的下标
-    if((addr = a[idx_b1]) == 0){  // 一个一级块负责 256 个二级块，这里检测对应一级块是否存在
-      a[idx_b1] = addr = balloc(ip->dev);
+  if(bn<NINDIRECT){
+    if((addr=ip->addrs[NDIRECT]) == 0)
+      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[bn])==0){
+      a[bn] = addr = balloc(ip->dev);
       log_write(bp);
-      // 标志这个块被修改了，随后会更新到磁盘的日志区
-      // 修改是因为，我们给这个储存块指针的块添加了一个新的块指针
     }
-
-    brelse(bp); // 释放块缓存
-
-    bp2 = bread(ip->dev, addr); // bp2 为二级块的缓存
-    a = (uint *)bp2->data;
-    uint idx_b2 = bn % NINDIRECT;
-    if((addr = a[idx_b2]) == 0){
-      a[idx_b2] = addr = balloc(ip->dev);
-      log_write(bp2);
-    }
-    brelse(bp2);
+    brelse(bp);
     return addr;
-  }
+    }
+    bn -= NINDIRECT;
 
-  panic("bmap: out of range");
+    if(bn < NINDIRECT * NINDIRECT){
+      uint iL1 = bn / NINDIRECT; // 一级索引
+      uint iL2 = bn % NINDIRECT; // 二级索引
+      if ((addr = ip->addrs[NDIRECT + 1]) == 0) {
+        // 若第一级索引目录不存在，则创建
+        addr = balloc(ip->dev);
+        if (addr == 0) {
+          return 0;
+        }
+        ip->addrs[NDIRECT + 1] = addr;
+      }
+      bp = bread(ip->dev, addr); // 读取第一级索引目录
+      a = (uint *)bp->data;
+      if ((addr = a[iL1]) == 0) {
+        // 如果对应的二级索引目录不存在，分配一个新的物理块，并将其记录在一级索引目录中
+        addr = balloc(ip->dev);
+        if (addr == 0) {
+          brelse(bp);
+          return 0;
+        }
+        a[iL1] = addr;
+        log_write(bp);
+      }
+      brelse(bp); // 使用了bp来读取，此时释放
+      bp = bread(ip->dev, addr); // 读取二级索引目录
+      a = (uint *)bp->data;
+      if ((addr = a[iL2]) == 0) {
+        // 如果对应的物理块号不存在，分配一个新的物理块，并将其记录在二级索引目录中
+        addr = balloc(ip->dev);
+        if (addr == 0) {
+          brelse(bp);
+          return 0;
+        } a
+        [iL2] = addr;
+        log_write(bp);
+      }
+      brelse(bp);
+      return addr;
+    }
+    panic("bmap: out of range");
 }
 
 // Truncate inode (discard contents).
