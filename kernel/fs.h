@@ -27,9 +27,10 @@ struct superblock {
 
 #define FSMAGIC 0x10203040
 
-#define NDIRECT 12
+#define NDIRECT 11 // 减少一个直接索引，增加一个二级间接索引
 #define NINDIRECT (BSIZE / sizeof(uint))
-#define MAXFILE (NDIRECT + NINDIRECT)
+#define NBI_INDIRECT NINDIRECT * NINDIRECT // 二级间接索引提供的块
+#define MAXFILE (NDIRECT + NINDIRECT + NBI_INDIRECT) //
 
 // On-disk inode structure
 //in fs.h
