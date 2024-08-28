@@ -4,7 +4,10 @@
 
 #define ROOTINO  1   // root i-number
 #define BSIZE 1024  // block size
-
+#define NDIRECT 11 // 减少一个直接索引，增加一个二级间接索引
+#define NINDIRECT (BSIZE / sizeof(uint))
+#define NBI_INDIRECT NINDIRECT * NINDIRECT // 二级间接索引提供的块
+#define MAXFILE (NDIRECT + NINDIRECT + NBI_INDIRECT) //
 // Disk layout:
 // [ boot block | super block | log | inode blocks |
 //                                          free bit map | data blocks]
@@ -29,13 +32,15 @@ struct superblock {
 #define MAXFILE (NDIRECT + NINDIRECT)
 
 // On-disk inode structure
+//in fs.h
+// On-disk inode structure
 struct dinode {
   short type;           // File type
   short major;          // Major device number (T_DEVICE only)
   short minor;          // Minor device number (T_DEVICE only)
   short nlink;          // Number of links to inode in file system
   uint size;            // Size of file (bytes)
-  uint addrs[NDIRECT+1];   // Data block addresses
+  uint addrs[NDIRECT + 2];   // Data block addresses 这里修改成了 + 2
 };
 
 // Inodes per block.

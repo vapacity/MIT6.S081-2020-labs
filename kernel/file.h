@@ -12,7 +12,7 @@ struct file {
 #define major(dev)  ((dev) >> 16 & 0xFFFF)
 #define minor(dev)  ((dev) & 0xFFFF)
 #define	mkdev(m,n)  ((uint)((m)<<16| (n)))
-
+// in file.h
 // in-memory copy of an inode
 struct inode {
   uint dev;           // Device number
@@ -26,7 +26,7 @@ struct inode {
   short minor;
   short nlink;
   uint size;
-  uint addrs[NDIRECT+1];
+  uint addrs[NDIRECT+2];// 这里修改成了 + 2
 };
 
 // map major device number to device functions.
