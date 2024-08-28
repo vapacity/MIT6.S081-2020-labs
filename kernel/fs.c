@@ -385,62 +385,49 @@ bmap(struct inode *ip, uint bn)
       ip->addrs[bn] = addr = balloc(ip->dev);
     return addr;
   }
-  bn -= NINDIRECT;
-  // bn 代表还剩多少个
-  if(bn<NINDIRECT){
-    if((addr=ip->addrs[NDIRECT]) == 0)
+  bn -= NDIRECT;
+
+  if(bn < NINDIRECT){
+    // Load indirect block, allocating if necessary.
+    if((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
-    if((addr = a[bn])==0){
+    if((addr = a[bn]) == 0){
       a[bn] = addr = balloc(ip->dev);
       log_write(bp);
     }
     brelse(bp);
     return addr;
-    }
-    bn -= NINDIRECT;
+  }
+  // 二级间接块的情况
+  if(bn < NDINDIRECT) {
+    int level2_idx = bn / NADDR_PER_BLOCK;  // 要查找的块号位于二级间接块中的位置
+    int level1_idx = bn % NADDR_PER_BLOCK;  // 要查找的块号位于一级间接块中的位置
+    // 读出二级间接块
+    if((addr = ip->addrs[NDIRECT + 1]) == 0)
+      ip->addrs[NDIRECT + 1] = addr = balloc(ip->dev);
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
 
-    if(bn < NINDIRECT * NINDIRECT){
-      uint iL1 = bn / NINDIRECT; // 一级索引
-      uint iL2 = bn % NINDIRECT; // 二级索引
-      if ((addr = ip->addrs[NDIRECT + 1]) == 0) {
-        // 若第一级索引目录不存在，则创建
-        addr = balloc(ip->dev);
-        if (addr == 0) {
-          return 0;
-        }
-        ip->addrs[NDIRECT + 1] = addr;
-      }
-      bp = bread(ip->dev, addr); // 读取第一级索引目录
-      a = (uint *)bp->data;
-      if ((addr = a[iL1]) == 0) {
-        // 如果对应的二级索引目录不存在，分配一个新的物理块，并将其记录在一级索引目录中
-        addr = balloc(ip->dev);
-        if (addr == 0) {
-          brelse(bp);
-          return 0;
-        }
-        a[iL1] = addr;
-        log_write(bp);
-      }
-      brelse(bp); // 使用了bp来读取，此时释放
-      bp = bread(ip->dev, addr); // 读取二级索引目录
-      a = (uint *)bp->data;
-      if ((addr = a[iL2]) == 0) {
-        // 如果对应的物理块号不存在，分配一个新的物理块，并将其记录在二级索引目录中
-        addr = balloc(ip->dev);
-        if (addr == 0) {
-          brelse(bp);
-          return 0;
-        } a
-        [iL2] = addr;
-        log_write(bp);
-      }
-      brelse(bp);
-      return addr;
+    if((addr = a[level2_idx]) == 0) {
+      a[level2_idx] = addr = balloc(ip->dev);
+      // 更改了当前块的内容，标记以供后续写回磁盘
+      log_write(bp);
     }
-    panic("bmap: out of range");
+    brelse(bp);
+
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    if((addr = a[level1_idx]) == 0) {
+      a[level1_idx] = addr = balloc(ip->dev);
+      log_write(bp);
+    }
+    brelse(bp);
+    return addr;
+  }
+
+  panic("bmap: out of range");
 }
 
 // Truncate inode (discard contents).
@@ -459,26 +446,38 @@ itrunc(struct inode *ip)
     }
   }
 
-  if(ip->addrs[NDIRECT + 1]){ // 判断 inode 是否使用了二级间接索引
+  if(ip->addrs[NDIRECT]){
+    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+    a = (uint*)bp->data;
+    for(j = 0; j < NINDIRECT; j++){
+      if(a[j])
+        bfree(ip->dev, a[j]);
+    }
+    brelse(bp);
+    bfree(ip->dev, ip->addrs[NDIRECT]);
+    ip->addrs[NDIRECT] = 0;
+  }
+  struct buf* bp1;
+  uint* a1;
+  if(ip->addrs[NDIRECT + 1]) {
     bp = bread(ip->dev, ip->addrs[NDIRECT + 1]);
     a = (uint*)bp->data;
-    for (i = 0; i < NINDIRECT; i++){ // 遍历一级块
-      if(a[i]){ // 如果有数据，就遍历这个一级块里的二级块
-        struct buf* bp2 = bread(ip->dev, a[i]); // 获取这个块的对应缓存
-        uint *a2 = bp2->data;
-        for(j = 0; j < NINDIRECT; j++){
-          if(a2[j])
-            bfree(ip->dev, a2[j]); // a2[j] 存的是块号，这里把磁盘中这个块的内容清空了。或者说释放
+    for(i = 0; i < NADDR_PER_BLOCK; i++) {
+      // 每个一级间接块的操作都类似于上面的
+      // if(ip->addrs[NDIRECT])中的内容
+      if(a[i]) {
+        bp1 = bread(ip->dev, a[i]);
+        a1 = (uint*)bp1->data;
+        for(j = 0; j < NADDR_PER_BLOCK; j++) {
+          if(a1[j])
+            bfree(ip->dev, a1[j]);
         }
-
-        brelse(bp2); // 释放块缓存
-        bfree(ip->dev, a[i]); // 释放磁盘中的块
-        // 和 a[i] 对应的是 bp2
-        // a[i] 是块号，bp2 是实际的块缓存
+        brelse(bp1);
+        bfree(ip->dev, a[i]);
       }
     }
-    brelse(bp); // 释放缓存
-    bfree(ip->dev, ip->addrs[NDIRECT + 1]); // 释放磁盘块
+    brelse(bp);
+    bfree(ip->dev, ip->addrs[NDIRECT + 1]);
     ip->addrs[NDIRECT + 1] = 0;
   }
 

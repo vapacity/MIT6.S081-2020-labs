@@ -4,10 +4,6 @@
 
 #define ROOTINO  1   // root i-number
 #define BSIZE 1024  // block size
-#define NDIRECT 11 // 减少一个直接索引，增加一个二级间接索引
-#define NINDIRECT (BSIZE / sizeof(uint))
-#define NBI_INDIRECT NINDIRECT * NINDIRECT // 二级间接索引提供的块
-#define MAXFILE (NDIRECT + NINDIRECT + NBI_INDIRECT) //
 // Disk layout:
 // [ boot block | super block | log | inode blocks |
 //                                          free bit map | data blocks]
@@ -26,11 +22,13 @@ struct superblock {
 };
 
 #define FSMAGIC 0x10203040
-
-#define NDIRECT 11 // 减少一个直接索引，增加一个二级间接索引
+#define MAXFILE (NDIRECT + NINDIRECT + NDINDIRECT)
+#define NDIRECT 11
 #define NINDIRECT (BSIZE / sizeof(uint))
-#define NBI_INDIRECT NINDIRECT * NINDIRECT // 二级间接索引提供的块
-#define MAXFILE (NDIRECT + NINDIRECT + NBI_INDIRECT) //
+#define NDINDIRECT ((BSIZE / sizeof(uint)) * (BSIZE / sizeof(uint)))
+
+#define NADDR_PER_BLOCK (BSIZE / sizeof(uint))  // 一个块中的地址数量
+
 
 // On-disk inode structure
 //in fs.h
