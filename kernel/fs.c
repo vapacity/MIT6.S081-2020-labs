@@ -400,6 +400,7 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+  bn -= NINDIRECT;
   // 二级间接块的情况
   if(bn < NDINDIRECT) {
     int level2_idx = bn / NADDR_PER_BLOCK;  // 要查找的块号位于二级间接块中的位置
